@@ -2,18 +2,22 @@
 import logging
 import json
 import random
+import urllib
 from os import path
-from pprint import pprint
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+from telegram.ext import Updater
+from telegram.ext import CommandHandler
+from telegram.ext import CallbackQueryHandler
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from template_helper import render
 
-# Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-
+# Setup logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 logger = logging.getLogger(__name__)
 
+# Setup questoes **temporario**
 PROJECT_DIR = path.dirname(path.dirname(__file__))
 
 with open(path.join(PROJECT_DIR, 'questoes.json')) as f:
@@ -48,20 +52,21 @@ def perguntar(bot, update):
     questao_id = random.choice(range(len(QUESTOES)))
     questao = QUESTOES[questao_id]
     reply_markup = build_reply_markup(questao_id)
-    message_text = render('questao.tpl', **questao['fields'])
-    update.message.reply_text(message_text, reply_markup=reply_markup)
+    message_text = render('questao.tpl', **questao)
+    update.message.reply_text(message_text,
+                              reply_markup=reply_markup,
+                              parse_mode='html')
 
 
 def validar_resposta(bot, update):
     query = update.callback_query
-
     data = json.loads(query.data)
-    text = query.message.text
 
     questao = QUESTOES[data['questao_id']]
-    resposta = questao['fields']['resposta']
+    resposta = questao['resposta']
 
     # TODO: contabilizar acerto para contato
+    text = render('questao.tpl', **questao)
     if data['alternativa'] == resposta:
         text += u"\n\nResposta certa, parabéns!"
     else:
@@ -69,7 +74,8 @@ def validar_resposta(bot, update):
 
     bot.editMessageText(text=text,
                         chat_id=query.message.chat_id,
-                        message_id=query.message.message_id)
+                        message_id=query.message.message_id,
+                        parse_mode='html')
 
 
 def estatisticas(bot, update):

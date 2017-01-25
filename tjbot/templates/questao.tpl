@@ -1,8 +1,9 @@
-[{{ origem }}]
-{{enunciado}}
+<b>{{ prova }}</b>
 
-A) {{A}}
-B) {{B}}
-C) {{C}}
-D) {{D}}
-E) {{E}}
+{{ enunciado }}
+
+A) {{ alternativas['a'] }}
+B) {{ alternativas['b'] }}
+C) {{ alternativas['c'] }}
+D) {{ alternativas['d'] }}
+E) {{ alternativas['e'] }}

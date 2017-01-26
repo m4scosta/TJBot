@@ -3,3 +3,5 @@ services:
   bot:
     build: .
     command: python tjbot/bot.py
+    volumes:
+      - .:/tjbot

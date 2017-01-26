@@ -9,6 +9,7 @@ from telegram.ext import CommandHandler
 from telegram.ext import CallbackQueryHandler
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from template_helper import render
+import settings
 
 # Setup logging
 logging.basicConfig(
@@ -90,7 +91,7 @@ def error(bot, update, error):
 
 
 def main():
-    updater = Updater("323184539:AAGxJXPtQyWlh3gM6U4ufxjKv4BIw2GtvzE")
+    updater = Updater(settings.TJBOT_API_KEY)
     dp = updater.dispatcher
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))

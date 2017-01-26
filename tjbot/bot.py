@@ -8,8 +8,11 @@ from telegram.ext import Updater
 from telegram.ext import CommandHandler
 from telegram.ext import CallbackQueryHandler
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
-from template_helper import render
 import settings
+from template_helper import render
+from storage import connect_to_database
+from models import User
+from models import Questao
 
 # Setup logging
 logging.basicConfig(
@@ -18,16 +21,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Setup questoes **temporario**
-PROJECT_DIR = path.dirname(path.dirname(__file__))
-
-with open(path.join(PROJECT_DIR, 'questoes.json')) as f:
-    QUESTOES = json.loads(f.read())
-
 
 def start(bot, update):
-    user = update.message.from_user.first_name
-    update.message.reply_text(render('start.tpl', user=user))
+    user = update.message.from_user
+    if not User.objects(telegram_id=user.id):
+        User(telegram_id=user.id).save()
+    update.message.reply_text(render('start.tpl', user=user.first_name))
 
 
 def help(bot, update):
@@ -50,10 +49,10 @@ def build_reply_markup(questao_id):
 
 
 def perguntar(bot, update):
-    questao_id = random.choice(range(len(QUESTOES)))
-    questao = QUESTOES[questao_id]
-    reply_markup = build_reply_markup(questao_id)
-    message_text = render('questao.tpl', **questao)
+    questao_idx = random.choice(range(Questao.objects().count()))
+    questao = Questao.objects[questao_idx]
+    reply_markup = build_reply_markup(str(questao.id))
+    message_text = render('questao.tpl', questao=questao)
     update.message.reply_text(message_text,
                               reply_markup=reply_markup,
                               parse_mode='html')
@@ -63,15 +62,20 @@ def validar_resposta(bot, update):
     query = update.callback_query
     data = json.loads(query.data)
 
-    questao = QUESTOES[data['questao_id']]
-    resposta = questao['resposta']
+    user = User.objects(telegram_id=query.from_user.id)
+    questao = Questao.objects.get(id=data['questao_id'])
 
-    # TODO: contabilizar acerto para contato
-    text = render('questao.tpl', **questao)
+    resposta = questao.resposta
+    text = render('questao.tpl', questao=questao)
+
     if data['alternativa'] == resposta:
-        text += u"\n\nResposta certa, parabéns!"
+        user.update_one(push__acertos=questao)
+        text += u"\n\n<b>Resposta certa, parabéns!</b>"
     else:
-        text += u"\n\nVocê errou :(\nResposta certa: %s" % resposta
+        user.update_one(push__erros=questao)
+        text += u"\n\n<b>Você errou :(\nResposta certa: %s</b>" % resposta
+
+    user.update_one(push__respondidas=questao)
 
     bot.editMessageText(text=text,
                         chat_id=query.message.chat_id,
@@ -80,9 +84,15 @@ def validar_resposta(bot, update):
 
 
 def estatisticas(bot, update):
-    # TODO: armazenar contato
-    # TODO: calcular estatisticas com dados do contato
-    reply = 'Respondidas: 50\nAcertos: 39(78%)\nErros: 11(22%)'
+    telegram_user = update.message.from_user
+    user = User.objects.get(telegram_id=telegram_user.id)
+    respondidas = len(user.respondidas)
+    acertos = len(user.acertos)
+    acertos_porcent = acertos * 100. / respondidas
+    erros = len(user.erros)
+    erros_porcent = erros * 100. / respondidas
+    reply = 'Respondidas: {}\nAcertos: {}({:.2f}%)\nErros: {}({:.2f}%)'.format(
+        respondidas, acertos, acertos_porcent, erros, erros_porcent)
     update.message.reply_text(reply)
 
 
@@ -91,6 +101,7 @@ def error(bot, update, error):
 
 
 def main():
+    connect_to_database()
     updater = Updater(settings.TJBOT_API_KEY)
     dp = updater.dispatcher
     dp.add_handler(CommandHandler("start", start))
@@ -108,4 +119,3 @@ if __name__ == '__main__':
 
 # TODO: nao repetir questoes
 # TODO: criar agendamento de perguntas
-# TODO: criar comando de estatisticas(acertos, erros, total, aproveitamento)

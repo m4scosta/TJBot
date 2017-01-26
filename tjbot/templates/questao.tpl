@@ -1,9 +1,9 @@
-<b>{{ prova }}</b>
+<b>{{ questao.prova }}</b>
 
-{{ enunciado }}
+{{ questao.enunciado }}
 
-<b>A)</b> {{ alternativas['a'] }}
-<b>B)</b> {{ alternativas['b'] }}
-<b>C)</b> {{ alternativas['c'] }}
-<b>D)</b> {{ alternativas['d'] }}
-<b>E)</b> {{ alternativas['e'] }}
+<b>A)</b> {{ questao.alternativas['a'] }}
+<b>B)</b> {{ questao.alternativas['b'] }}
+<b>C)</b> {{ questao.alternativas['c'] }}
+<b>D)</b> {{ questao.alternativas['d'] }}
+<b>E)</b> {{ questao.alternativas['e'] }}

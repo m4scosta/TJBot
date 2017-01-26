@@ -1,7 +1,17 @@
 version: '2'
 services:
   bot:
-    build: .
+    build:
+      context: .
+      args:
+        - api_key
     command: python tjbot/bot.py
+    restart: on-failure
     volumes:
       - .:/tjbot
+    depends_on:
+      - db
+    environment:
+      - TJBOT_DB_HOST=db
+  db:
+    image: mongo:3.0.14

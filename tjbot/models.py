@@ -10,6 +10,8 @@ class Questao(Document):
 
 class User(Document):
     telegram_id = LongField(required=True)
+    chat_id = LongField(required=True)
+    questao_automatica_ativa = BooleanField(default=False)
     respondidas = ListField(ReferenceField(Questao))
     acertos = ListField(ReferenceField(Questao))
     erros = ListField(ReferenceField(Questao))

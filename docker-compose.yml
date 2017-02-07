@@ -3,15 +3,19 @@ services:
   bot:
     build:
       context: .
-      args:
-        - api_key
     command: python tjbot/bot.py
     restart: on-failure
-    volumes:
-      - .:/tjbot
     depends_on:
       - db
     environment:
       - TJBOT_DB_HOST=db
+      - TJBOT_API_KEY
+      - TJBOT_AUTO_QUESTION_TIME
+    env_file:
+      - .env
   db:
     image: mongo:3.0.14
+    volumes:
+      - mongodbdata:/data/db
+volumes:
+  mongodbdata:

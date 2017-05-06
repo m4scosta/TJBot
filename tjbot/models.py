@@ -1,11 +1,16 @@
 from mongoengine import *
 
 
+class Materia(Document):
+    nome = StringField(required=True, unique=True)
+
+
 class Questao(Document):
     prova = StringField(required=True)
     enunciado = StringField(required=True)
     alternativas = DictField(required=True)
     resposta = StringField(required=True, max_lenght=1)
+    materia = ReferenceField(Materia)
 
 
 class User(Document):

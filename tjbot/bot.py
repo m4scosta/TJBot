@@ -5,6 +5,7 @@ import random
 import schedule
 import time
 import threading
+import pdb
 from telegram.ext import Updater
 from telegram.ext import CommandHandler
 from telegram.ext import CallbackQueryHandler
@@ -14,6 +15,8 @@ from template_helper import render
 from storage import connect_to_database
 from models import User
 from models import Questao
+from models import Materia
+from keyboards import KeyboardBuilder
 
 # Setup logging
 logging.basicConfig(
@@ -43,55 +46,69 @@ def build_keyboard_button(questao_id, alternativa):
     return InlineKeyboardButton(alternativa, callback_data=data)
 
 
-def build_reply_markup(questao_id):
-    a = build_keyboard_button(questao_id, "A")
-    b = build_keyboard_button(questao_id, "B")
-    c = build_keyboard_button(questao_id, "C")
-    d = build_keyboard_button(questao_id, "D")
-    e = build_keyboard_button(questao_id, "E")
-    return InlineKeyboardMarkup([[a, b], [c, d], [e]])
-
-
-def sortear_questao(user):
-    nao_acertos = Questao.objects(id__nin=[q.id for q in user.acertos])
-    random_index = random.choice(range(nao_acertos.count()))
-    return nao_acertos[random_index]
+def sortear_questao(user, materia=None):
+    query = {'id__nin': [q.id for q in user.acertos]}
+    if materia is not None:
+        query['materia'] = materia
+    nao_acertos = Questao.objects(**query)
+    return random.choice(nao_acertos)
 
 
 def perguntar(bot, update):
     telegram_user = update.message.from_user
     user = User.objects.get(telegram_id=telegram_user.id)
-    questao = sortear_questao(user)
-    reply_markup = build_reply_markup(str(questao.id))
-    message_text = render('questao.tpl', questao=questao)
-    update.message.reply_text(message_text,
-                              reply_markup=reply_markup,
-                              parse_mode='html')
+    materias = Materia.objects()
+    message_text = 'Qual matéria?'
+    keyboard = KeyboardBuilder.materias_keyboard(*materias)
+    update.message.reply_text(message_text, reply_markup=keyboard)
 
+class QueryHandler(object):
 
-def validar_resposta(bot, update):
-    query = update.callback_query
-    data = json.loads(query.data)
+    def __call__(self, bot, update, **kwargs):
+        print kwargs
+        query = update.callback_query
+        data = json.loads(query.data)
+        user = User.objects.get(telegram_id=query.from_user.id)
+        request_type = data['t']
 
-    user = User.objects(telegram_id=query.from_user.id)
-    questao = Questao.objects.get(id=data['questao_id'])
+        if request_type == settings.MATERIA_QUESTION_REQUEST:
+            self.send_materia_question(bot, update, query, data, user)
+        elif request_type == settings.VALIDATE_ANSWER_REQUEST:
+            self.validate_answer(bot, update, query, data, user)
+        else:
+            bot.editMessageText(text='Mensagem inválida.',
+                                chat_id=query.message.chat_id,
+                                message_id=query.message.message_id)
 
-    resposta = questao.resposta
-    text = render('questao.tpl', questao=questao)
+    def send_materia_question(self, bot, update, query, data, user):
+        questao = sortear_questao(user, materia=data['mid'])
+        keyboard = KeyboardBuilder.answer_keyboard(questao)
+        message_text = render('questao.tpl', questao=questao)
+        bot.editMessageText(text=message_text,
+                            chat_id=query.message.chat_id,
+                            message_id=query.message.message_id,
+                            reply_markup=keyboard,
+                            parse_mode='html')
 
-    if data['alternativa'] == resposta:
-        user.update_one(push__acertos=questao)
-        text += u"\n\n<b>Resposta certa, parabéns!</b>"
-    else:
-        user.update_one(push__erros=questao)
-        text += u"\n\n<b>Você errou :(\nResposta certa: %s</b>" % resposta
+    def validate_answer(self, bot, update, query, data, user):
+        user = User.objects(id=user.id)  # must be QuerySet to allow update_one
+        questao = Questao.objects.get(id=data['qid'])
+        resposta = questao.resposta
+        text = render('questao.tpl', questao=questao)
 
-    user.update_one(push__respondidas=questao)
+        if data['alt'] == resposta:
+            user.update_one(push__acertos=questao)
+            text += u"\n\n<b>Resposta certa, parabéns!</b>"
+        else:
+            user.update_one(push__erros=questao)
+            text += u"\n\n<b>Você errou :(\nResposta certa: %s</b>" % resposta
 
-    bot.editMessageText(text=text,
-                        chat_id=query.message.chat_id,
-                        message_id=query.message.message_id,
-                        parse_mode='html')
+        user.update_one(push__respondidas=questao)
+
+        bot.editMessageText(text=text,
+                            chat_id=query.message.chat_id,
+                            message_id=query.message.message_id,
+                            parse_mode='html')
 
 
 def estatisticas(bot, update):
@@ -138,9 +155,9 @@ def enviar_questao_automatica(bot):
         for user in users:
             questao = sortear_questao(user)
             text = render('questao.tpl', questao=questao)
-            reply_markup = build_reply_markup(str(questao.id))
+            keyboard = KeyboardBuilder.answer_keyboard(questao)
             bot.sendMessage(text=text,
-                            reply_markup=reply_markup,
+                            reply_markup=keyboard,
                             chat_id=user.chat_id,
                             parse_mode='html')
     return task
@@ -171,7 +188,7 @@ def main():
     dp.add_handler(
         CommandHandler(
             "desativar_questao_automatica", desativar_questao_automatica))
-    dp.add_handler(CallbackQueryHandler(validar_resposta))
+    dp.add_handler(CallbackQueryHandler(QueryHandler()))
     dp.add_error_handler(error)
     updater.start_polling()
     thread = threading.Thread(target=scheduler_task)

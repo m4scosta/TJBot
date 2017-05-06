@@ -1,4 +1,3 @@
-import pdb
 import json
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 import settings
@@ -17,8 +16,8 @@ def _build_button(label, **data):
     return InlineKeyboardButton(label, callback_data=json.dumps(data))
 
 
-def _build_keyboard(buttons_data, columns=2):
-    buttons = map(lambda d: _build_button(d['label'], **d['data']), buttons_data)
+def _build_keyboard(btns_data, columns=2):
+    buttons = map(lambda d: _build_button(d['label'], **d['data']), btns_data)
     rows = _chunks(buttons, columns)
     return InlineKeyboardMarkup(rows)
 
@@ -45,6 +44,7 @@ def _format_materia_data(materia):
             'mid': str(materia.id)
         }
     }
+
 
 class KeyboardBuilder(object):
 

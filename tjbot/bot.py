@@ -5,17 +5,11 @@ import random
 import schedule
 import time
 import threading
-import pdb
-from telegram.ext import Updater
-from telegram.ext import CommandHandler
-from telegram.ext import CallbackQueryHandler
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 import settings
-from template_helper import render
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 from storage import connect_to_database
-from models import User
-from models import Questao
-from models import Materia
+from models import User, Questao, Materia
+from template_helper import render
 from keyboards import KeyboardBuilder
 
 # Setup logging
@@ -41,11 +35,6 @@ def help(bot, update):
     update.message.reply_text(render('help.tpl', user=user))
 
 
-def build_keyboard_button(questao_id, alternativa):
-    data = json.dumps({'questao_id': questao_id, 'alternativa': alternativa})
-    return InlineKeyboardButton(alternativa, callback_data=data)
-
-
 def sortear_questao(user, materia=None):
     query = {'id__nin': [q.id for q in user.acertos]}
     if materia is not None:
@@ -61,6 +50,7 @@ def perguntar(bot, update):
     message_text = 'Qual matéria?'
     keyboard = KeyboardBuilder.materias_keyboard(*materias)
     update.message.reply_text(message_text, reply_markup=keyboard)
+
 
 class QueryHandler(object):
 

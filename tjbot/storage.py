@@ -25,20 +25,9 @@ def find_or_create_materia(name):
 
 
 def import_questions(fname, materia_name):
-    """Usar com cautela"""
     connect_to_database()
     questions = read_questions_from_json_file(fname)
     materia = find_or_create_materia(materia_name)
     map(lambda q: q.update({'materia': materia.id}), questions)
-
     for q in questions:
-       Questao(**q).save()
-
-
-if __name__ == '__main__':
-    pprint(read_questions_from_json_file('direito-penal.json'))
-    # import_questions('direito-penal.json', 'Direito penal')
-    # import_questions('direito-constitucional.json', 'Direito constitucional')
-    # import_questions('direito-administrativo.json', 'Direito administrativo')
-    # import_questions('portugues.json', 'Portugês')
-    # import_questions('direito-processual-penal.json', 'Direito Processual penal')
+        Questao(**q).save()

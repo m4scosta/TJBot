@@ -1,4 +1,12 @@
-*.pyc
-*.log
-questoes.json
+# sensible data files
 *.env
+
+# python compiled files
+*.pyc
+
+# log file
+*.log
+
+# vim files
+*.swo
+*.swp

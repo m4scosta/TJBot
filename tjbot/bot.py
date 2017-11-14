@@ -11,6 +11,7 @@ from storage import connect_to_database
 from models import User, Questao, Materia
 from template_helper import render
 from keyboards import KeyboardBuilder
+from commands.clear_data import ClearData
 
 # Setup logging
 logging.basicConfig(
@@ -55,7 +56,6 @@ def perguntar(bot, update):
 class QueryHandler(object):
 
     def __call__(self, bot, update, **kwargs):
-        print kwargs
         query = update.callback_query
         data = json.loads(query.data)
         user = User.objects.get(telegram_id=query.from_user.id)
@@ -173,6 +173,7 @@ def main():
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("perguntar", perguntar))
     dp.add_handler(CommandHandler("estatisticas", estatisticas))
+    dp.add_handler(CommandHandler("limpar_dados", ClearData()))
     dp.add_handler(
         CommandHandler("ativar_questao_automatica", ativar_questao_automatica))
     dp.add_handler(

@@ -55,5 +55,5 @@ class KeyboardBuilder(object):
 
     @staticmethod
     def materias_keyboard(*materias):
-        data = map(lambda m: _format_materia_data(m), materias)
+        data = map(_format_materia_data, materias)
         return _build_keyboard(data)

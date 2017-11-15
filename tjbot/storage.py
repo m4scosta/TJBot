@@ -1,11 +1,9 @@
 # coding: utf-8
 import os
-import sys
 import json
 from mongoengine import connect
 import settings
 from models import Questao, Materia
-from pprint import pprint
 
 
 def connect_to_database():

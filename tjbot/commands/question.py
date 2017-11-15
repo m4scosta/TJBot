@@ -16,6 +16,36 @@ def choose_question(user, materia=None):
     return random.choice(nao_acertos)
 
 
+def send_materia_question(bot, update, query, data, user):
+    questao = choose_question(user, materia=data['mid'])
+    keyboard = KeyboardBuilder.answer_keyboard(questao)
+    message_text = render('questao.tpl', questao=questao)
+    bot.editMessageText(text=message_text,
+                        chat_id=query.message.chat_id,
+                        message_id=query.message.message_id,
+                        reply_markup=keyboard,
+                        parse_mode='html')
+
+def validate_answer(bot, update, query, data, user):
+    user = User.objects(id=user.id)  # must be QuerySet to allow update_one
+    questao = Questao.objects.get(id=data['qid'])
+    resposta = questao.resposta
+    text = render('questao.tpl', questao=questao)
+
+    if data['alt'] == resposta:
+        user.update_one(push__acertos=questao)
+        text += u"\n\n<b>Resposta certa, parabéns!</b>"
+    else:
+        user.update_one(push__erros=questao)
+        text += u"\n\n<b>Você errou :(\nResposta certa: %s</b>" % resposta
+
+    user.update_one(push__respondidas=questao)
+
+    bot.editMessageText(text=text,
+                        chat_id=query.message.chat_id,
+                        message_id=query.message.message_id,
+                        parse_mode='html')
+
 class AskQuestion(CommandHandler):
 
     def handle(self):
@@ -33,40 +63,10 @@ class QueryHandler(object):
         request_type = data['t']
 
         if request_type == settings.MATERIA_QUESTION_REQUEST:
-            self.send_materia_question(bot, update, query, data, user)
+            send_materia_question(bot, update, query, data, user)
         elif request_type == settings.VALIDATE_ANSWER_REQUEST:
-            self.validate_answer(bot, update, query, data, user)
+            validate_answer(bot, update, query, data, user)
         else:
             bot.editMessageText(text='Mensagem inválida.',
                                 chat_id=query.message.chat_id,
                                 message_id=query.message.message_id)
-
-    def send_materia_question(self, bot, update, query, data, user):
-        questao = choose_question(user, materia=data['mid'])
-        keyboard = KeyboardBuilder.answer_keyboard(questao)
-        message_text = render('questao.tpl', questao=questao)
-        bot.editMessageText(text=message_text,
-                            chat_id=query.message.chat_id,
-                            message_id=query.message.message_id,
-                            reply_markup=keyboard,
-                            parse_mode='html')
-
-    def validate_answer(self, bot, update, query, data, user):
-        user = User.objects(id=user.id)  # must be QuerySet to allow update_one
-        questao = Questao.objects.get(id=data['qid'])
-        resposta = questao.resposta
-        text = render('questao.tpl', questao=questao)
-
-        if data['alt'] == resposta:
-            user.update_one(push__acertos=questao)
-            text += u"\n\n<b>Resposta certa, parabéns!</b>"
-        else:
-            user.update_one(push__erros=questao)
-            text += u"\n\n<b>Você errou :(\nResposta certa: %s</b>" % resposta
-
-        user.update_one(push__respondidas=questao)
-
-        bot.editMessageText(text=text,
-                            chat_id=query.message.chat_id,
-                            message_id=query.message.message_id,
-                            parse_mode='html')

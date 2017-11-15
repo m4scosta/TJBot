@@ -1,6 +1,5 @@
 # coding: utf-8
 from commands.command_handler import CommandHandler
-from template_helper import render
 
 
 class EnableAutoQuestion(CommandHandler):

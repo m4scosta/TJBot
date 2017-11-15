@@ -5,3 +5,4 @@ Comandos disponíveis:
   - /estatisticas: são apresentados as estatísticas de todas as suas respostas
   - /ativar_questao_automatica: ativa envio automático de uma questão não resolvida todos os dias às 19:00
   - /desativar_questao_automatica: desativa envio de questão automática
+  - /limpar_dados: limpa todas suas respostas permanentemente.

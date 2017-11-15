@@ -1,6 +1,6 @@
 import json
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 import settings
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 DEFAULT_ALTERNATIVES = ('A', 'B', 'C', 'D', 'E')

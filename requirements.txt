@@ -1,4 +1,4 @@
 Jinja2==2.10
-python-telegram-bot==5.3.0
+python-telegram-bot==13.2
 mongoengine==0.11.0
 schedule==0.4.3
